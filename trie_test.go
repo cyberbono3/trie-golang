@@ -1,34 +1,21 @@
 package trie
 
 import (
-	"bytes"
 	"testing"
+	"bytes"
 )
 
-func byteSliceEq(s1, s2 []byte) {
-	if len(s1) != len(s2) {
-		return false
-	}
-	i, ln2 := 0, len(s2)
 
-	for _, b1 := range s1 {
-		if i >= ln2 || !bytes.Equal(b1, s2[i]) {
-			return false
-		}
-		i++
-	}
-	return true
-}
 
 func TestNewTrie(t *testing.T) {
 	trie := NewTrie()
 
 	if trie.node == nil {
-		t.Errorf("trie root is invalid. expected: %v, got: %v)", &TrieNode{}, trie.node)
+		t.Errorf("trie root is invalid. expected: %v, got: %v", &trieNode{}, trie.node)
 	}
 
 	if trie.size != 1 {
-		t.Errorf("trie size is invalid. expected: %v, got: %v)", 1, trie.size)
+		t.Errorf("trie size is invalid. expected: %v, got: %v", 1, trie.size)
 	}
 }
 
@@ -77,13 +64,13 @@ func TestTrieSearch(t *testing.T) {
 		trie.Insert([]byte(k), v)
 	}
 	for k, v := range testMap {
-		rv, ok := trie.Search(k)
+		rv, ok := trie.Search([]byte(k))
 
 		if !ok {
 			t.Errorf("unable to find a key, expected: %v, got: %v", true, ok)
 		}
 
-		if !bytes.Equal(v, rv) {
+		if !bytes.Equal(v, rv){
 			t.Errorf("incorrect value for a key %v, expected: %v, got: %v", k, v, rv)
 		}
 	}
@@ -91,11 +78,11 @@ func TestTrieSearch(t *testing.T) {
 	invalidKey := []byte("invalid key")
 	rv, ok := trie.Search(invalidKey)
 	if ok {
-		t.Errorf("Invalid key is not present in a trie, expected: %v, got: %v", false, ok)
+		t.Errorf("Invalid key %v is not present in a trie, expected: %v, got: %v", invalidKey, false, ok)
 	}
 
 	if len(rv) != 0 {
-		t.Errorf("invalid value for key %v. expected: %v, got: %v", k, []byte{}, v)
+		t.Errorf("invalid value for key %v. expected: %v, got: %v", invalidKey, []byte{}, rv)
 	}
 
 }
@@ -124,11 +111,12 @@ func TestGetAllValues(t *testing.T) {
 	testCases := []map[string]interface{}{
 		map[string]interface{}{
 			"expectedLen": 5,
-			"expectedValues": []byte{
+			"expectedValues": []Bytes{
 				[]byte{1, 2},
 				[]byte{2, 3},
 				[]byte{3, 4},
 				[]byte{4, 5},
+				[]byte{5, 6},
 			},
 		},
 	}
@@ -139,13 +127,13 @@ func TestGetAllValues(t *testing.T) {
 		if len(vals) != tc["expectedLen"].(int) {
 			t.Errorf("invalid length of values returned. expected: %v, got: %v",
 				tc["expectedLen"].(int),
-				len(trieVals),
+				len(vals),
 			)
 		}
 
-		if !byteSliceEq(vals, tc["expectedValues"]) {
+		if !byteSliceEq(vals , tc["expectedValues"].([]Bytes) ){
 			t.Errorf("missing value from expected list of values. expected: %v, got: %v",
-				tc["expectedKeys"],
+				tc["expectedValues"].([]Bytes),
 				vals,
 			)
 		}
@@ -155,10 +143,10 @@ func TestGetAllValues(t *testing.T) {
 func TestGetAllKeys(t *testing.T) {
 	trie := NewTrie()
 
-	keys := trie.GetAllKeys()
+	retrievedKeys := trie.GetAllKeys()
 
-	if len(keys) != 0 {
-		t.Errorf("invalid length of keys returned. expected: %v, got %v", 0, len(keys))
+	if len(retrievedKeys) != 0 {
+		t.Errorf("invalid length of keys returned. expected: %v, got %v", 0, len(retrievedKeys))
 	}
 
 	testMap := map[string][]byte{
@@ -176,30 +164,30 @@ func TestGetAllKeys(t *testing.T) {
 	testCases := []map[string]interface{}{
 		map[string]interface{}{
 			"expectedLen": 5,
-			"expectedKeys": []byte{
-				[]byte("one"),
-				[]byte("two"),
-				[]byte("three"),
-				[]byte("four"),
-				[]byte("five"),
+			"expectedKeys": []Bytes{
+				Bytes("one"),
+				Bytes("two"),
+				Bytes("three"),
+				Bytes("four"),
+				Bytes("five"),
 			},
 		},
 	}
 
 	for _, tc := range testCases {
-		keys = trie.GetAllKeys()
+		retrievedKeys = trie.GetAllKeys()
 
-		if len(keys) != tc["expectedLen"].(int) {
+		if len(retrievedKeys) != tc["expectedLen"].(int) {
 			t.Errorf("invalid length of keys returned. expected: %v, got %v",
 				tc["expectedLen"].(int),
-				len(keys),
+				len(retrievedKeys),
 			)
 		}
 
-		if !byteSliceEq(keys, tc["expectedKeys"]) {
+		if !bytes.Equal(retrievedKeys, tc["expectedKeys"].([]byte)) {
 			t.Errorf("missing key from expected list of keys. expected: %v, got %v",
-				tc["expectedKeys"],
-				keys,
+				tc["expectedKeys"].([]byte),
+				retrievedKeys ,
 			)
 		}
 	}

@@ -5,55 +5,58 @@ import (
 	"sync"
 )
 
-type TrieNode struct {
-	leaves map[byte]*TrieNode
+
+type trieNode struct {
+	leaves map[byte]*trieNode
 	key    byte
 	value  []byte
 }
 
-type Trie struct {
+type trie struct {
 	mutex sync.RWMutex
-	node  *TrieNode
+	node  *trieNode
 	size  int
 }
 
-func NewNode(key byte) *TrieNode {
-	return &TrieNode{leaves: make(map[byte]*TrieNode), key: key}
+func NewNode(key byte) *trieNode {
+	return &trieNode{leaves: make(map[byte]*trieNode), key: key}
 }
 
-func NewTrie() *Trie {
-	return &Trie{
-		node: &TrieNode{leaves: make(map[byte]*TrieNode)},
+func NewTrie() *trie {
+	return &trie{
+		node: &trieNode{leaves: make(map[byte]*trieNode)},
 		size: 1,
 	}
 }
 
-// Insert key value pair in a tree
-func (t *Trie) Insert(key, value []byte) {
+
+
+// Insert key value pair in a trie
+func (t *trie) Insert(key, value []byte) {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
 	curr := t.node
 
-	if key != nil {
-		for _, k := range key {
-			if curr.leaves[k] == nil {
-				curr.leaves[k] = NewNode(k)
-			}
-			curr = curr.leaves[k]
+	for _, k := range key {
+		if curr.leaves[k] == nil {
+			curr.leaves[k] = NewNode(k)
 		}
+		curr = curr.leaves[k]
 	}
+
+	t.size++
 
 	curr.value = value
 }
 
-func (t *Trie) Size() int {
+func (t *trie) Size() int {
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()
 	return t.size
 }
 
-func (t *Trie) Search(key []byte) ([]byte, bool) {
+func (t *trie) Search(key []byte) ([]byte, bool) {
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()
 
@@ -61,54 +64,50 @@ func (t *Trie) Search(key []byte) ([]byte, bool) {
 
 	for _, k := range key {
 		if curr.leaves[k] == nil {
-			return nil, false
+			return nil,false
 		}
 		curr = curr.leaves[k]
 	}
-	return curr.value, true
+	return curr.value,true
 }
 
-func GetKeysByDFS(node *TrieNode, visited map[*TrieNode]bool, key, keys []byte) {
-	if node != nil {
-		keyList := append(key, node.key)
-		visited[node] = true
 
-		if node.value != nil {
-			fullKeyList := make([]byte, len(keyList))
+func (t *trie) GetAllKeys() []byte {
+	var keys []byte
+	visited := make(map[*trieNode]bool)
 
-			copy(fullKeyList, keyList)
-
-			// we ignore the first byte which is root key
-			keys = append(keys, fullKeyList[1:])
-		}
-		for _, leaf := range node.leaves {
-			if _, ok := visited[leaf]; !ok {
-				GetKeysByDFS(leaf, visited, keyList, keys)
+	var dfsKeysFunc func(node *trieNode)
+	dfsKeysFunc = func(node *trieNode) {
+		if node != nil {
+			visited[node] = true
+			for k, n := range node.leaves {
+				if _, ok := visited[n]; !ok {
+					keys = append(keys, k)
+					dfsKeysFunc(n)
+				}
 			}
 		}
-	}
-}
 
-func (t *Trie) GetAllKeys() []byte {
-	keys := []byte{}
-	visited := make(map[*TrieNode]bool)
-	GetKeysByDFS(t.node, visited, []byte{}, keys)
+	}
+	dfsKeysFunc(t.node)
 	return keys
 
 }
+// Bytes is type alis
+type Bytes []byte
 
-func (t *Trie) GetAllValues() []byte {
-	q = list.New()
-	visited := make(map[*TrieNode]bool)
-	values := []byte{}
+func (t *trie) GetAllValues() []Bytes {
+	queue :=  list.New()
+	visited := make(map[*trieNode]bool)
+	values := []Bytes{}
 
-	q.PushBack(t.node)
+	queue.PushBack(t.node)
+    // BFS
+	for queue.Len() > 0 {
+		first := queue.Front()
+		queue.Remove(first)
 
-	for q.Len() > 0 {
-		item := q.Front()
-		q.Remove(item)
-
-		node := item.Value.(*TrieNode)
+		node := first.Value.(*trieNode)
 		visited[node] = true
 
 		if node.value != nil {
@@ -117,7 +116,7 @@ func (t *Trie) GetAllValues() []byte {
 
 		for _, leaf := range node.leaves {
 			if _, ok := visited[leaf]; !ok {
-				q.PushBack(leaf)
+				queue.PushBack(leaf)
 			}
 		}
 
@@ -125,5 +124,4 @@ func (t *Trie) GetAllValues() []byte {
 
 	return values
 
-	// ToDO GetPrefixKeys and GetPrefixValues
 }
